@@ -3,7 +3,7 @@
 import { Button } from "@nextui-org/button";
 import { Input } from "@nextui-org/input";
 
-import { DeleteIcon, EditIcon, Rocket } from "lucide-react";
+import { CheckIcon, CircleCheckBigIcon, DeleteIcon, EditIcon, Rocket } from "lucide-react";
 import { Todo, useStore } from "./store/store";
 import { Key, useCallback, useState } from "react";
 import { Chip } from "@nextui-org/chip";
@@ -21,12 +21,26 @@ const columns = [
 export default function Home() {
 
   const [todo, setTodo] = useState<string>("");
-  const { Todos, addTodo } = useStore();
+  const { Todos, addTodo, removeTodo, completeTodo, updateTodo } = useStore();
+  const [editTodoId, setEditTodoId] = useState<number | null>(null);
+  const [editText, setEditText] = useState<string>("");
 
   const handleAdd = () => {
     if (!todo.trim()) return alert("Please enter a todo");
     addTodo({ id: Todos.length + 1, text: todo, completed: false });
     setTodo("");
+  }
+
+  const handleEdit = (id: number, text: string) => {
+    setEditTodoId(id);
+    setEditText(text);
+  }
+
+  const handleUpdate = (id: number) => {
+    if (!editText.trim()) return alert("Please enter a todo");
+    updateTodo(id, editText);
+    setEditTodoId(null);
+    setEditText("");
   }
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -48,9 +62,15 @@ export default function Home() {
         );
       case "text":
         return (
-          <div className="flex flex-col">
+          editTodoId === todo.id ? (
+            <Input
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              className="text-sm capitalize"
+            />
+          ) : (
             <p className="text-sm capitalize">{cellValue}</p>
-          </div>
+          )
         );
       case "completed":
         return (
@@ -60,23 +80,38 @@ export default function Home() {
         );
       case "actions":
         return (
-          <div className="relative flex text-right gap-2">
-            <Tooltip content="Edit todo">
-              <span className="text-lg text-default-400 cursor-pointer active:opacity-50">
-                <EditIcon />
-              </span>
-            </Tooltip>
-            <Tooltip color="danger" content="Delete todo">
-              <span className="text-lg text-danger cursor-pointer active:opacity-50">
-                <DeleteIcon />
-              </span>
-            </Tooltip>
+          <div className="relative flex justify-center gap-2 w-full">
+            {editTodoId === todo.id ? (
+              <Tooltip content="Confirm edit">
+                <span className="text-lg text-default-400 cursor-pointer active:opacity-50" onClick={() => handleUpdate(todo.id)}>
+                  <CheckIcon />
+                </span>
+              </Tooltip>
+            ) : (
+              <>
+                <Tooltip content="Edit todo">
+                  <span className="text-lg text-default-400 cursor-pointer active:opacity-50" onClick={() => handleEdit(todo.id, todo.text)}>
+                    <EditIcon />
+                  </span>
+                </Tooltip>
+                <Tooltip content="Complete todo">
+                  <span className="text-lg text-default-400 cursor-pointer active:opacity-50" onClick={() => completeTodo(todo.id)}>
+                    <CircleCheckBigIcon />
+                  </span>
+                </Tooltip>
+                <Tooltip color="danger" content="Delete todo">
+                  <span className="text-lg text-danger cursor-pointer active:opacity-50" onClick={() => removeTodo(todo.id)}>
+                    <DeleteIcon />
+                  </span>
+                </Tooltip>
+              </>
+            )}
           </div>
         );
       default:
         return cellValue;
     }
-  }, []);
+  }, [editTodoId, editText]);
 
 
   return (
